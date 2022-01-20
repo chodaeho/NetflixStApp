@@ -22,9 +22,67 @@ class SearchViewController: UIViewController {
 
 extension SearchViewController: UISearchBarDelegate {
     
+    private func dismissKeyboard() {
+        searchBar.resignFirstResponder()
+    }
+    
 //    searchBar에 검색어를 쓰고 search버튼을 눌렀을때 이벤트
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        // 검색시작
+//        검색시작
+        
+//        검색 후 검색 결과를 볼 수 있도록 키보드가 내려가도록 처리
+        dismissKeyboard()
+//        검색어가 있는지 확인
+        guard let searchTerm = searchBar.text, searchTerm.isEmpty == false else { return }
+        
         print("검색어 : \(searchBar.text)")
+//        네트워킹을 통한 검색
+        SearchAPI.search(searchTerm) { movies in
+            // collectionView로 표현하기
+        }
+        
     }
+}
+
+class SearchAPI {
+    // 타입 메소드는 인스턴스 메소드와 다르게 인스턴스 생성 없이 메소드를 바로 호출 가능함.
+    static func search(_ term: String, completion: @escaping ([Movie]) -> Void) {
+        let session = URLSession(configuration: .default)
+        
+        var urlComponents = URLComponents(string: "https://itunes.apple.com/search?")!
+        let mediaQuery = URLQueryItem(name: "media", value: "movie")
+        let entityQuery = URLQueryItem(name: "entity", value: "movie")
+        let termQuery = URLQueryItem(name: "term", value: term)
+        urlComponents.queryItems?.append(mediaQuery)
+        urlComponents.queryItems?.append(entityQuery)
+        urlComponents.queryItems?.append(termQuery)
+        
+        let requestURL = urlComponents.url!
+        
+        let dataTask = session.dataTask(with: requestURL) { data, response, error in
+            let successRange = 200..<300
+            guard error == nil, let statusCode = (response as? HTTPURLResponse)?.statusCode, successRange.contains(statusCode) else {
+                completion([])
+                return
+            }
+            
+            guard let resultData = data else {
+                completion([])
+                return
+            }
+            let string = String(data: resultData, encoding: .utf8)
+            print(string)
+            
+//            completion([Movie])
+        }
+        dataTask.resume()
+    }
+}
+
+struct Response {
+    
+}
+
+struct Movie {
+    
 }
